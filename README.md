@@ -30,6 +30,6 @@ Data available under the same license as the rest of the repository; check it ou
 
 ## LICENSE
 
-(c) Hershberg & Merelo, 2026
+© Hershberg & Merelo, 2026
 
 This code and text is available under the Affero GPL license. Check [LICENSE](LICENSE) for details. If you are writing a paper using this data and code, we ask you to cite our paper using the citation above or other format (available from tne URL above)
