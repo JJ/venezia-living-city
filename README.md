@@ -1,6 +1,6 @@
 # Venezia the living city
 
-Repo for paper "Venezia: the living city" by Hershberg &amp; Merelo
+Repo for paper "Venezia: the living city" by Hershberg &amp; Merelo, [presented at the Wivace 2025](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas) conference.
 
 Please find the reference at [`references.bib`](references.bib) or copy it from here
 
@@ -17,7 +17,6 @@ year="2027",
 publisher="Springer Nature Switzerland",
 address="Cham",
 pages="3--16",
-abstract="What makes some cities successful and others less so? We propose here that the structure of a city and the way it enables motion through its streets; i.e. its walkabilty, predicts its usability. We further suggest that this can be seen by studying the network structure of a city's streets, since the network reflects the history of their use. As an example of our claim we will study Venice. The city is a good example for our hypothesis as it is both universally walkable and one of the most purposefully sustained cities in existence. To study the network of Venice in a way that reflects the need to adapt it to the motion of people we will single out those elements of the city that are most changeable, that is, those that can be easily added or created by eliminating some barrier. We will study the bridges between islands (ponti) and contrast them with the intra island streets (calli) that make up most of the pedestrian network of Venice. Even in its uniqueness, looking at Venice will help us develop a methodology for analyzing the current state of a city graph and gather some insights on how it achieves its purpose through historical analysis of its evolution.",
 isbn="978-3-032-33185-4"
 }
 

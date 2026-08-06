@@ -1,0 +1,237 @@
+---
+title: "Venice, the Living City"
+subtitle: "Interactive highlights from the betweenness analysis of Venice's pedestrian network"
+author: "Uri Hershberg & JJ Merelo"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 9)
+
+library(igraph)
+library(dplyr)
+library(stringr)
+library(scales)
+library(plotly)
+library(DT)
+library(visNetwork)
+
+# Categorical palette (slot 1 / slot 8): identity, not magnitude
+pal_calle  <- "#2a78d6"
+pal_bridge <- "#e34948"
+# Sequential blue ramp for magnitude (edge betweenness)
+pal_seq <- c("#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b")
+```
+
+```{r load-data}
+load("data/venice.graph.undirected.Rdata")
+g <- venice.graph.undirected
+E(g)$edge.betweenness <- edge_betweenness(g)
+
+number.of.edges <- ecount(g)
+percent.bridges <- round(length(E(g)[E(g)$bridge == TRUE]) * 100 / number.of.edges, 2)
+percent.sotoportegos <- round(length(E(g)[E(g)$sotoportego != FALSE]) * 100 / number.of.edges, 2)
+```
+
+## TL;DR
+
+This is a condensed, interactive companion to [*"Venice, the Living City"* (WIVACE 2025, Hershberg & Merelo)](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas). The paper argues that Venice's resilience as a walkable medieval city can be read directly from the network structure of its pedestrian paths — and specifically from its **bridges (*ponti*)**, the most changeable, easily added-or-removed elements of the network. All charts below are interactive (hover, zoom, filter) and computed live from the same OpenStreetMap-derived graph used in the paper.
+
+Headline findings:
+
+- Venice's foot network has `r format(vcount(g), big.mark=",")` junctions and `r format(ecount(g), big.mark=",")` undirected path segments, of which `r percent.bridges`% are bridges and `r percent.sotoportegos`% are *sotoportegi* (underpasses).
+- Bridges have **far higher edge betweenness** than ordinary streets (*calli*) — a sign they were built precisely where the city needed to close a structural gap.
+- The two corridors with the single highest betweenness are not the postcard sights (Rialto, San Marco) but two other stretches: one hugging the Bacino di San Marco near the San Zaccaria vaporetto stop, the other running through Campo Sant'Anzolo to the Ponte dell'Accademia.
+- Even after removing dead-end alleys, bridges keep a roughly 9x higher median betweenness than calli — the effect isn't an artifact of blind alleys.
+
+## The dataset
+
+Data comes from OpenStreetMap (using Python library [`osmnx`](https://github.com/gboeing/osmnx), place name *"Venezia-Murano-Burano, Veneto Italy"*, downloaded August 2024), restricted to the `walk` network type. The directed OSM graph (14K+ edges) was merged into a single undirected graph, with edges tagged as bridges, tunnels/*sotoportegi*, and by OSM way name and type.
+
+```{r stats-table}
+data.frame(
+  Metric = c("Junctions (nodes)", "Path segments (edges)", "Bridges", "Sotoportegi (underpasses)"),
+  Value = c(format(vcount(g), big.mark = ","), format(ecount(g), big.mark = ","),
+            paste0(percent.bridges, "%"), paste0(percent.sotoportegos, "%"))
+) %>%
+  datatable(rownames = FALSE, options = list(dom = "t", paging = FALSE),
+            caption = "Venice pedestrian graph, at a glance")
+```
+
+*Note on the figures below:* the original paper illustrates the highest-betweenness corridor with two hand-annotated OpenStreetMap screenshots. The processed graph used here doesn't carry vertex coordinates (only junction IDs survive the OSM → igraph pipeline), so a geographic re-plot isn't possible from this dataset alone. As a substitute we build an interactive, data-driven view of that same corridor below — a subgraph of the highest-betweenness edges, laid out by force-directed layout rather than geography, but computed directly from the analysis rather than annotated by hand.
+
+## Which edges matter most?
+
+Edge betweenness (Newman & Girvan) measures how many shortest paths between all pairs of junctions pass through a given edge — a proxy for how much a single street or bridge holds the city together.
+
+```{r top-table}
+edge.betweenness.table <- data.frame(
+  edge = sapply(E(g)$name, function(x) x[1]),
+  betweenness = E(g)$edge.betweenness,
+  type = ifelse(E(g)$bridge, "Bridge", "Calle"),
+  stringsAsFactors = FALSE
+)
+sorted.table <- edge.betweenness.table[order(-edge.betweenness.table$betweenness), ]
+sorted.table$rank <- seq_len(nrow(sorted.table))
+
+datatable(
+  head(sorted.table[, c("rank", "edge", "betweenness", "type")], 20),
+  colnames = c("Rank", "Edge name", "Betweenness", "Type"),
+  rownames = FALSE,
+  options = list(pageLength = 10, dom = "ftip"),
+  caption = "Top 20 edges ranked by betweenness centrality"
+) %>%
+  formatRound("betweenness", 1) %>%
+  formatStyle("type", target = "row",
+              backgroundColor = styleEqual(c("Bridge", "Calle"), c("#fbe4e3", "transparent")))
+```
+
+### The highest-betweenness corridor, as a network
+
+```{r subnetwork}
+top_n <- 40
+top_idx <- order(E(g)$edge.betweenness, decreasing = TRUE)[seq_len(top_n)]
+sub_g <- subgraph.edges(g, E(g)[top_idx], delete.vertices = TRUE)
+
+sub_edge_names <- sapply(E(sub_g)$name, function(x) x[1])
+edgelist <- as_edgelist(sub_g, names = FALSE)
+
+edges_df <- data.frame(
+  from = edgelist[, 1],
+  to = edgelist[, 2],
+  color = ifelse(E(sub_g)$bridge, pal_bridge, pal_calle),
+  width = rescale(E(sub_g)$edge.betweenness, to = c(2, 12)),
+  title = paste0("<b>", sub_edge_names, "</b><br>",
+                 ifelse(E(sub_g)$bridge, "Bridge", "Calle"),
+                 "<br>Betweenness: ", round(E(sub_g)$edge.betweenness))
+)
+nodes_df <- data.frame(id = seq_len(vcount(sub_g)), label = "", shape = "dot",
+                        size = 6, color = "#898781")
+
+visNetwork(nodes_df, edges_df, height = "520px") %>%
+  visEdges(smooth = FALSE) %>%
+  visOptions(highlightNearest = list(enabled = TRUE, degree = 1)) %>%
+  visLayout(randomSeed = 42) %>%
+  visLegend(addEdges = data.frame(label = c("Bridge", "Calle"), color = c(pal_bridge, pal_calle)),
+            useGroups = FALSE, width = 0.15)
+```
+
+Hover an edge for its name and betweenness; click a node to highlight its immediate neighborhood. The two clusters described in the paper are visible here as the two denser knots: one anchored on the *Ponte del Sepolcro – San Zaccaria – rio dell'Arsenale* stretch, the other on *Campo Sant'Anzolo – Campo S. Stefano – Ponte dell'Accademia*.
+
+## Distribution of betweenness
+
+```{r rank-plot}
+plot_ly(sorted.table, x = ~rank, y = ~betweenness, type = "scatter", mode = "markers",
+        marker = list(color = pal_seq[4], size = 5, opacity = 0.55),
+        text = ~edge,
+        hovertemplate = "%{text}<br>Rank %{x}<br>Betweenness %{y:.0f}<extra></extra>") %>%
+  layout(title = "Rank-value plot of edge betweenness",
+         xaxis = list(title = "Rank"),
+         yaxis = list(title = "Edge betweenness (log scale)", type = "log"))
+```
+
+The broken-stick shape — a slow decline, a long plateau, then a fast drop — is visible directly: hover any point to see which street or bridge it is. The plateau (a few thousand edges around the same value) corresponds mostly to dead-end *rami* and *corti*.
+
+```{r histogram}
+plot_ly(sorted.table, x = ~betweenness, type = "histogram",
+        marker = list(color = pal_seq[4], line = list(color = "#fcfcfb", width = 1))) %>%
+  layout(title = "Distribution of edge betweenness",
+         xaxis = list(title = "Edge betweenness (log scale)", type = "log"),
+         yaxis = list(title = "Count (log scale)", type = "log"))
+```
+
+## Bridges vs. calli
+
+```{r violin}
+bridge.median <- median(edge.betweenness.table$betweenness[edge.betweenness.table$type == "Bridge"])
+calle.median  <- median(edge.betweenness.table$betweenness[edge.betweenness.table$type == "Calle"])
+
+plot_ly(edge.betweenness.table, x = ~type, y = ~betweenness, type = "violin",
+        color = ~type, colors = c(Bridge = pal_bridge, Calle = pal_calle),
+        box = list(visible = TRUE), meanline = list(visible = TRUE), points = FALSE) %>%
+  layout(title = "Edge betweenness: bridges vs. calli",
+         xaxis = list(title = ""),
+         yaxis = list(title = "Edge betweenness (log scale)", type = "log"),
+         showlegend = FALSE)
+```
+
+Median edge betweenness is `r round(bridge.median)` for bridges vs. `r round(calle.median)` for calli — bridges run about **`r round(bridge.median / calle.median, 1)`x higher**, evidence that they were placed precisely where the network needed a shortcut.
+
+## Does it survive removing dead ends?
+
+Roughly a third of edges terminate in a degree-1 dead end (blind alleys, closed squares). Dropping those and recomputing betweenness on the pruned graph:
+
+```{r prune}
+blind.alleys <- which(degree(g) <= 1)
+g.pruned <- delete_vertices(g, blind.alleys)
+E(g.pruned)$edge.betweenness <- edge_betweenness(g.pruned)
+
+pruned.df <- data.frame(
+  betweenness = E(g.pruned)$edge.betweenness,
+  type = ifelse(E(g.pruned)$bridge, "Bridge", "Calle")
+) %>%
+  group_by(type) %>%
+  arrange(desc(betweenness)) %>%
+  mutate(rank = row_number()) %>%
+  ungroup()
+
+plot_ly(pruned.df, x = ~rank, y = ~betweenness, color = ~type,
+        colors = c(Bridge = pal_bridge, Calle = pal_calle),
+        type = "scatter", mode = "markers", marker = list(size = 5, opacity = 0.55)) %>%
+  layout(title = "Rank-value plot after removing dead ends, by type",
+         xaxis = list(title = "Rank (within type)"),
+         yaxis = list(title = "Edge betweenness (log scale)", type = "log"))
+```
+
+```{r prune-medians}
+bridge.median.pruned <- median(pruned.df$betweenness[pruned.df$type == "Bridge"])
+calle.median.pruned  <- median(pruned.df$betweenness[pruned.df$type == "Calle"])
+```
+
+After pruning, median betweenness is `r round(bridge.median.pruned)` for bridges vs. `r round(calle.median.pruned)` for calli — still about **`r round(bridge.median.pruned / calle.median.pruned, 1)`x higher**. The plateau seen above largely disappears (most plateau edges were the dead ends just removed), but the bridge advantage holds.
+
+## Street types and their connective power
+
+Not all non-bridge ways are alike either. Grouping edges by their first OSM street-name word (*calle*, *fondamenta*, *campo*, *rio*, *salizada*, ...):
+
+```{r type-table}
+calle.type <- data.frame(
+  name = sapply(E(g)$name, function(x) x[1]),
+  betweenness = E(g)$edge.betweenness,
+  stringsAsFactors = FALSE
+)
+calle.type$edge.type <- str_extract(calle.type$name, "\\w*")
+
+type.summary <- calle.type %>%
+  group_by(edge.type) %>%
+  filter(n() > 50, edge.type != "") %>%
+  summarize(edges = n(), median_betweenness = median(betweenness)) %>%
+  arrange(desc(median_betweenness))
+
+datatable(type.summary, colnames = c("Segment name", "Occurrences", "Median betweenness"),
+          rownames = FALSE, options = list(pageLength = 10, dom = "ftip"),
+          caption = "Street/way types (>50 occurrences), ranked by median edge betweenness") %>%
+  formatRound("median_betweenness", 1)
+```
+
+Four of the top five types by median betweenness — *riva*, *ponte*, *rio* (paved-over canal), *fondamenta* — are tangent to or built directly over water. The fifth, *salizada* ("paved"), marks the streets deliberately paved over open ground as early as the 13th century. Both are signatures of the same process: edges added, over centuries, exactly where they closed a structural gap in the network.
+
+## Takeaways
+
+- Venice's most connective paths are disproportionately its most **changeable** ones — bridges, paved-over canals, waterside platforms — not its oldest or most iconic streets.
+- The two single highest-betweenness corridors sit near, but not on top of, San Marco and the Rialto — likely reflecting later adaptations (the Accademia bridge and its academic district; the residential expansion of Castello around the Biennale gardens) rather than the historical mercantile core.
+- The pattern survives pruning dead ends, so it isn't an artifact of Venice's many blind alleys.
+- Read together, this is consistent with Venice behaving as a *living* system: not statically stable, but stable *because* its network keeps adapting.
+
+For the full argument, related work, and discussion, see the WIVACE 2025 paper this notebook summarizes.
+
+---
+
+<small>Source data: `data/venice.graph.undirected.Rdata` (OpenStreetMap, August 2024 extract). Rendered with `igraph`, `plotly`, `DT`, and `visNetwork` — all HTML widgets, no static/PDF plots.</small>
