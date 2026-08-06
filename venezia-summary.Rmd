@@ -244,7 +244,7 @@ Four of the top five types by median betweenness — *riva*, *ponte*, *rio* (pav
 - The pattern survives pruning dead ends, so it isn't an artifact of Venice's many blind alleys.
 - Read together, this is consistent with Venice behaving as a *living* system: not statically stable, but stable *because* its network keeps adapting.
 
-For the full argument, related work, and discussion, see the WIVACE 2025 paper this notebook summarizes.
+For the full argument, related work, and discussion, see the [WIVACE 2025 paper]((https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1) this notebook summarizes.
 
 ---
 

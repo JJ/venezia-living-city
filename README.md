@@ -2,8 +2,7 @@
 
 > Check it out directly at https://jj.github.io/venezia-living-city
 
-Repo for paper "Venezia: the living city" by Hershberg &amp; Merelo, [presented at the Wivace 2025](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas) conference. Check out [this summary with highlights and code](venezia-summary.html) for the paper.
-
+Repo for paper "Venezia: the living city" by Hershberg &amp; Merelo, [presented at the Wivace 2025](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas) conference. 
 Please find the reference at [`references.bib`](references.bib) or copy it from here
 
 ```
@@ -23,6 +22,10 @@ isbn="978-3-032-33185-4"
 }
 
 ```
+
+## Abridged paper
+
+Check out [this summary with highlights and code](venezia-summary.html) for the paper.
 
 ## Data
 
