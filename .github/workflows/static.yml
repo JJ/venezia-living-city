@@ -42,7 +42,7 @@ jobs:
         run: |
           pandoc README.md \
             --toc --standalone \
-            --metadata title="Venezia: the living city by Hershbert & Merelo" \
+            --metadata title="Venezia: the living city by Hershberg & Merelo" \
             --css academic.css \
             --highlight-style tango \
             -o index.html
