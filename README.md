@@ -22,6 +22,10 @@ isbn="978-3-032-33185-4"
 
 ```
 
+## Data
+
+Data available under the same license as the rest of the repository; check it out in the [`data` directory]](https://github.com/JJ/venezia-living-city/tree/main/data) of the main repository. Code to process it is available from the paper linked above, click on "Show" to reveal it.
+
 ## LICENSE
 
 (c) Hershberg & Merelo, 2026
