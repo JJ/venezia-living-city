@@ -28,6 +28,14 @@ pal_calle  <- "#2a78d6"
 pal_bridge <- "#e34948"
 # Sequential blue ramp for magnitude (edge betweenness)
 pal_seq <- c("#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b")
+
+# plotly's histogram and violin traces don't reliably render on a *log-scaled
+# axis* (known plotly.js limitation - binning/KDE happens in linear space).
+# Workaround: log10-transform the data ourselves and fake log tick labels on
+# an otherwise linear axis. Scatter traces (rank plots below) don't need this
+# - they support a real log axis natively.
+log_tick_vals <- log10(c(0.1, 1, 10, 100, 1000, 10000, 100000, 1000000))
+log_tick_text <- c("0.1", "1", "10", "100", "1k", "10k", "100k", "1M")
 ```
 
 ```{r load-data}
@@ -140,25 +148,31 @@ plot_ly(sorted.table, x = ~rank, y = ~betweenness, type = "scatter", mode = "mar
 The broken-stick shape — a slow decline, a long plateau, then a fast drop — is visible directly: hover any point to see which street or bridge it is. The plateau (a few thousand edges around the same value) corresponds mostly to dead-end *rami* and *corti*.
 
 ```{r histogram}
-plot_ly(sorted.table, x = ~betweenness, type = "histogram",
+sorted.table$log_betweenness <- log10(pmax(sorted.table$betweenness, 0.1))
+
+plot_ly(sorted.table, x = ~log_betweenness, type = "histogram", nbinsx = 40,
         marker = list(color = pal_seq[4], line = list(color = "#fcfcfb", width = 1))) %>%
   layout(title = "Distribution of edge betweenness",
-         xaxis = list(title = "Edge betweenness (log scale)", type = "log"),
+         xaxis = list(title = "Edge betweenness (log scale)",
+                      tickvals = log_tick_vals, ticktext = log_tick_text),
          yaxis = list(title = "Count (log scale)", type = "log"))
 ```
 
-## Bridges vs. calli
+## Bridges vs. *calli*
 
 ```{r violin}
 bridge.median <- median(edge.betweenness.table$betweenness[edge.betweenness.table$type == "Bridge"])
 calle.median  <- median(edge.betweenness.table$betweenness[edge.betweenness.table$type == "Calle"])
 
-plot_ly(edge.betweenness.table, x = ~type, y = ~betweenness, type = "violin",
+edge.betweenness.table$log_betweenness <- log10(pmax(edge.betweenness.table$betweenness, 0.1))
+
+plot_ly(edge.betweenness.table, x = ~type, y = ~log_betweenness, type = "violin",
         color = ~type, colors = c(Bridge = pal_bridge, Calle = pal_calle),
         box = list(visible = TRUE), meanline = list(visible = TRUE), points = FALSE) %>%
   layout(title = "Edge betweenness: bridges vs. calli",
          xaxis = list(title = ""),
-         yaxis = list(title = "Edge betweenness (log scale)", type = "log"),
+         yaxis = list(title = "Edge betweenness (log scale)",
+                      tickvals = log_tick_vals, ticktext = log_tick_text),
          showlegend = FALSE)
 ```
 
