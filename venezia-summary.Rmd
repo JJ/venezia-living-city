@@ -248,4 +248,4 @@ For the full argument, related work, and discussion, see the [WIVACE 2025 paper]
 
 ---
 
-<small>Source data: [`data/venice.graph.undirected.Rdata`](https://github.com/JJ/venezia-living-city/tree/main/data) (OpenStreetMap, August 2024 extract). Rendered with `igraph`, `plotly`, `DT`, and `visNetwork` — all HTML widgets, no static/PDF plots.</small>
+<small>Source data: [`data/venice.graph.undirected.Rdata`](https://github.com/JJ/venezia-living-city/tree/main/data) (OpenStreetMap, August 2024 extract). Rendered with `igraph`, `plotly`, `DT`, and `visNetwork`</small>
