@@ -1,6 +1,6 @@
 # Venezia the living city
 
-> Check it out directly at https://jj.github.io/venezia-living-city or the [interactive map of Venize with the high-betweenness coridor marked on it](venezia-corridor-map.html).
+> Check it out directly at [the website](https://jj.github.io/venezia-living-city) or the [interactive map of Venize with the high-betweenness coridor marked on it](venezia-corridor-map.html).
 
 Repo for paper "Venezia: the living city" by Hershberg &amp; Merelo, [presented at the Wivace 2025](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas) conference. 
 Please find the reference at [`references.bib`](references.bib) or copy it from here
