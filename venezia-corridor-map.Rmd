@@ -1,0 +1,115 @@
+---
+title: "Venice, the Living City"
+subtitle: "The highest-betweenness corridor, on a real map"
+author: "JJ Merelo"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: flatly
+    toc: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(igraph)
+library(dplyr)
+library(scales)
+library(jsonlite)
+library(leaflet)
+library(htmltools)
+
+# Same categorical convention as venezia-summary.Rmd: identity, not magnitude
+pal_calle  <- "#2a78d6"
+pal_bridge <- "#e34948"
+```
+
+## The corridor, geographically
+
+[*"Venice, the Living City"*](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas) (WIVACE 2025, Hershberg & Merelo) illustrates its highest-betweenness corridor with hand-annotated OpenStreetMap screenshots. [`venezia-summary.Rmd`](venezia-summary.Rmd) reproduces the same subgraph with a force-directed layout instead, because the merged undirected graph used for the betweenness analysis drops vertex coordinates — only OSM junction IDs survive the pipeline.
+
+Those IDs, however, are real OSM node IDs, so the actual coordinates can be recovered directly from OpenStreetMap. This notebook fetches them for the corridor's nodes and plots the same top-40-by-betweenness edge set on a real map of Venice, keeping the paper's color convention: **blue for calli, red for bridges**.
+
+```{r load-data}
+load("data/venice.graph.undirected.Rdata")
+g <- venice.graph.undirected
+E(g)$edge.betweenness <- edge_betweenness(g)
+
+top_n <- 40
+top_idx <- order(E(g)$edge.betweenness, decreasing = TRUE)[seq_len(top_n)]
+sub_g <- subgraph_from_edges(g, E(g)[top_idx], delete.vertices = TRUE)
+
+sub_edge_names <- sapply(E(sub_g)$name, function(x) x[1])
+edgelist <- as_edgelist(sub_g, names = FALSE)
+```
+
+```{r load-coords}
+# Coordinates for this corridor's OSM node IDs (V(sub_g)$id), fetched once via
+# the Overpass API and cached here so the map doesn't depend on network access
+# at render time.
+nodes_raw <- fromJSON("data/top-corridor-node-coords.json")$elements
+coord_lookup <- setNames(
+  data.frame(lat = nodes_raw$lat, lon = nodes_raw$lon),
+  c("lat", "lon")
+)
+rownames(coord_lookup) <- as.character(nodes_raw$id)
+
+osm_ids <- V(sub_g)$id
+missing_ids <- setdiff(osm_ids, rownames(coord_lookup))
+if (length(missing_ids) > 0) {
+  warning(sprintf("Missing coordinates for %d node(s): %s",
+                   length(missing_ids), paste(missing_ids, collapse = ", ")))
+}
+```
+
+```{r build-map}
+from_id <- osm_ids[edgelist[, 1]]
+to_id   <- osm_ids[edgelist[, 2]]
+
+edge_widths <- rescale(E(sub_g)$edge.betweenness, to = c(3, 9))
+
+m <- leaflet(options = leafletOptions(minZoom = 13)) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(lng = 12.3400, lat = 45.4380, zoom = 15)
+
+for (i in seq_along(from_id)) {
+  f <- as.character(from_id[i])
+  t <- as.character(to_id[i])
+  if (!(f %in% rownames(coord_lookup)) || !(t %in% rownames(coord_lookup))) next
+
+  is_bridge <- E(sub_g)$bridge[i]
+  edge_color <- if (is_bridge) pal_bridge else pal_calle
+  edge_label <- sprintf(
+    "<b>%s</b><br>%s<br>Betweenness: %s",
+    htmlEscape(sub_edge_names[i]),
+    if (is_bridge) "Bridge" else "Calle",
+    format(round(E(sub_g)$edge.betweenness[i]), big.mark = ",")
+  )
+
+  m <- m %>% addPolylines(
+    lng = c(coord_lookup[f, "lon"], coord_lookup[t, "lon"]),
+    lat = c(coord_lookup[f, "lat"], coord_lookup[t, "lat"]),
+    color = edge_color,
+    weight = edge_widths[i],
+    opacity = 0.85,
+    label = lapply(list(edge_label), HTML)
+  )
+}
+
+m <- m %>%
+  addLegend(
+    position = "bottomright",
+    colors = c(pal_bridge, pal_calle),
+    labels = c("Bridge", "Calle"),
+    title = "Edge type",
+    opacity = 1
+  )
+
+m
+```
+
+> Hover a segment for its name and betweenness. The two denser knots described in the paper are visible here in their real geographic setting: one hugging the *Bacino di San Marco* near the San Zaccaria vaporetto stop, the other running through *Campo Sant'Anzolo* to the *Ponte dell'Accademia*.
+
+---
+
+<small>Source data: [`data/venice.graph.undirected.Rdata`](https://github.com/JJ/venezia-living-city/tree/main/data) (OpenStreetMap, August 2024 extract). Node coordinates for this corridor: [`data/top-corridor-node-coords.json`](data/top-corridor-node-coords.json) (OpenStreetMap, via the Overpass API). Basemap tiles &copy; [CartoDB](https://carto.com/attributions), map data &copy; [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). Rendered with `igraph` and `leaflet`.</small>
