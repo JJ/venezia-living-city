@@ -160,6 +160,8 @@ plot_ly(sorted.table, x = ~log_betweenness, type = "histogram", nbinsx = 40,
 
 ## Bridges vs. *calli*
 
+Bridges are much more important than simple *calli* for literally bridging different parts of the city.
+
 ```{r violin}
 bridge.median <- median(edge.betweenness.table$betweenness[edge.betweenness.table$type == "Bridge"])
 calle.median  <- median(edge.betweenness.table$betweenness[edge.betweenness.table$type == "Calle"])
