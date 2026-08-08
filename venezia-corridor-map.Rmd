@@ -7,9 +7,10 @@ output:
   html_document:
     theme: flatly
     toc: false
+    code_folding: hide
 ---
 
-> This is a companion to the paper [Venezia, the living city](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1). Check out data and additional content at [its website](https://jj.github.io/venezia-living-city)
+> This is a companion to the paper [Venezia, the living city](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1). Check out data and additional content at [its website](https://jj.github.io/venezia-living-city).
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
