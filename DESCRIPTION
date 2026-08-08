@@ -1,0 +1,20 @@
+Package: venezialivingcity
+Title: Venice, the Living City -- Betweenness Analysis Notebooks
+Version: 0.1.0
+Type: Project
+License: MIT
+Description: R Markdown notebooks accompanying "Venice, the Living City"
+    (WIVACE 2025, Hershberg & Merelo), analyzing betweenness centrality
+    of Venice's pedestrian network.
+Imports:
+    igraph,
+    dplyr,
+    stringr,
+    scales,
+    plotly,
+    DT,
+    visNetwork,
+    knitr,
+    leaflet,
+    jsonlite,
+    htmltools
