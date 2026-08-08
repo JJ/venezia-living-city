@@ -37,7 +37,7 @@ jobs:
       - name: Install pandoc and system dependencies for R packages
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y pandoc libuv1-dev libglpk-dev
+          sudo apt-get install -y pandoc libuv1-dev libglpk-dev  libgdal-dev gdal-bin libproj-dev proj-bin proj-data
       - name: Generate index.html from README.md
         run: |
           pandoc README.md \
@@ -52,7 +52,7 @@ jobs:
         with:
           r-version: 'release'
       - name: Install R dependencies
-        run: install.packages(c("igraph","dplyr","stringr","scales","plotly","DT","visNetwork"))
+        run: install.packages(c("igraph","dplyr","stringr","scales","plotly","DT","visNetwork", "leaflet","jsonlite","htmltools"))
         shell: Rscript {0}
       - name: Render all Rmd and qmd files
         run: |
