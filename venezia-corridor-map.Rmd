@@ -26,7 +26,7 @@ pal_bridge <- "#e34948"
 
 ## The corridor, geographically
 
-[*"Venice, the Living City"*](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas) (WIVACE 2025, Hershberg & Merelo) illustrates its highest-betweenness corridor with hand-annotated OpenStreetMap screenshots. [`venezia-summary.Rmd`](venezia-summary.Rmd) reproduces the same subgraph with a force-directed layout instead, because the merged undirected graph used for the betweenness analysis drops vertex coordinates — only OSM junction IDs survive the pipeline.
+[*"Venice, the Living City"*](https://link.springer.com/chapter/10.1007/978-3-032-33185-4_1#citeas) (WIVACE 2025, Hershberg & Merelo) illustrates its highest-betweenness corridor with hand-annotated OpenStreetMap screenshots. [The summary](venezia-summary.html) reproduces the same subgraph with a force-directed layout instead, because the merged undirected graph used for the betweenness analysis drops vertex coordinates — only OSM junction IDs survive the pipeline.
 
 Those IDs, however, are real OSM node IDs, so the actual coordinates can be recovered directly from OpenStreetMap. This notebook fetches them for the corridor's nodes and plots the same top-40-by-betweenness edge set on a real map of Venice, keeping the paper's color convention: **blue for calli, red for bridges**.
 
@@ -61,6 +61,8 @@ if (length(missing_ids) > 0) {
                    length(missing_ids), paste(missing_ids, collapse = ", ")))
 }
 ```
+
+Here are the high-edge-betweenness corridors.
 
 ```{r build-map}
 from_id <- osm_ids[edgelist[, 1]]
@@ -108,7 +110,7 @@ m <- m %>%
 m
 ```
 
-> Hover a segment for its name and betweenness. The two denser knots described in the paper are visible here in their real geographic setting: one hugging the *Bacino di San Marco* near the San Zaccaria vaporetto stop, the other running through *Campo Sant'Anzolo* to the *Ponte dell'Accademia*.
+> Hover over a segment for its name and betweenness. The two denser knots described in the paper are visible here in their real geographic setting: one hugging the *Bacino di San Marco* near the San Zaccaria vaporetto stop, the other running through *Campo Sant'Anzolo* to the *Ponte dell'Accademia*.
 
 ---
 
